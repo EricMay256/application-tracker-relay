@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Application Tracker Relay</title>
+<style>
+  :root {
+    --bg: #faf9f7;
+    --surface: #ffffff;
+    --border: #e5e3df;
+    --border-strong: #d4d1cc;
+    --text: #1a1a1a;
+    --text-muted: #6b6b6b;
+    --text-faint: #8a8a8a;
+    --accent: #c96442;
+    --accent-hover: #b05636;
+    --success-bg: #e8f3ec;
+    --success-border: #9cc8ae;
+    --success-text: #1f5132;
+    --error-bg: #fbeaea;
+    --error-border: #d9a4a4;
+    --error-text: #7a1f1f;
+    --radius: 6px;
+    --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    --font-serif: "Iowan Old Style", "Palatino Linotype", Palatino, "URW Palladio L", Georgia, serif;
+    --font-mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    padding: 40px 20px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.5;
+    min-height: 100vh;
+  }
+
+  .container { max-width: 720px; margin: 0 auto; }
+  header { margin-bottom: 24px; }
+
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-size: 26px;
+    letter-spacing: -0.01em;
+    margin: 0 0 4px 0;
+  }
+
+  .subtitle { color: var(--text-muted); font-size: 13px; margin: 0; }
+
+  form {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 22px 24px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 20px;
+  }
+
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+
+  label { font-size: 13px; font-weight: 500; color: var(--text); }
+  label .req { color: var(--accent); margin-left: 2px; }
+
+  input, select, textarea {
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 8px 10px;
+    line-height: 1.4;
+    width: 100%;
+    transition: border-color 120ms ease, box-shadow 120ms ease;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.15);
+  }
+
+  input:disabled, select:disabled, textarea:disabled {
+    background: #f6f5f3;
+    color: var(--text-muted);
+    cursor: not-allowed;
+  }
+
+  textarea { resize: vertical; min-height: 72px; font-family: inherit; }
+
+  select {
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%236b6b6b' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 32px;
+  }
+
+  .actions { margin-top: 22px; display: flex; align-items: center; gap: 12px; }
+
+  button {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 500;
+    color: white;
+    background: var(--accent);
+    border: none;
+    border-radius: var(--radius);
+    padding: 10px 20px;
+    cursor: pointer;
+    transition: background 120ms ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  button:hover:not(:disabled) { background: var(--accent-hover); }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+  button.secondary {
+    background: transparent;
+    color: var(--text-muted);
+    border: 1px solid var(--border-strong);
+  }
+
+  button.secondary:hover:not(:disabled) {
+    background: var(--surface);
+    color: var(--text);
+  }
+
+  .spinner {
+    width: 12px;
+    height: 12px;
+    border: 2px solid rgba(255,255,255,0.35);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  button.loading .spinner { display: inline-block; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .status {
+    margin-top: 16px;
+    padding: 12px 14px;
+    border-radius: var(--radius);
+    font-size: 14px;
+    display: none;
+    line-height: 1.5;
+  }
+
+  .status.show { display: block; }
+
+  .status.success {
+    background: var(--success-bg);
+    border: 1px solid var(--success-border);
+    color: var(--success-text);
+  }
+
+  .status.error {
+    background: var(--error-bg);
+    border: 1px solid var(--error-border);
+    color: var(--error-text);
+  }
+
+  .status strong { font-weight: 600; }
+
+  .status a {
+    color: inherit;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .status a:hover { text-decoration-thickness: 2px; }
+
+  .status pre {
+    margin: 8px 0 0 0;
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.04);
+    border-radius: 4px;
+    font-family: var(--font-mono);
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+    max-height: 200px;
+    overflow: auto;
+  }
+
+  .row-number {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: rgba(255,255,255,0.5);
+    padding: 1px 6px;
+    border-radius: 3px;
+    margin-left: 4px;
+  }
+
+  @media (max-width: 560px) {
+    .grid { grid-template-columns: 1fr; }
+    body { padding: 24px 16px; }
+  }
+
+  .paste-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 16px 18px;
+    margin-bottom: 16px;
+  }
+
+  .paste-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 8px;
+  }
+
+  #jsonInput {
+    width: 100%;
+    min-height: 140px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    line-height: 1.5;
+    color: var(--text);
+    background: #fbfaf8;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+    resize: vertical;
+  }
+
+  #jsonInput:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(201, 100, 66, 0.15);
+  }
+
+  .paste-actions {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .paste-msg {
+    font-size: 13px;
+    line-height: 1.4;
+  }
+
+  .paste-msg.ok { color: var(--success-text); }
+  .paste-msg.err { color: var(--error-text); }
+
+  .date-wrap { position: relative; }
+
+  .date-clear {
+    position: absolute;
+    top: 50%;
+    right: 30px;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    font-size: 16px;
+    line-height: 1;
+    cursor: pointer;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    border-radius: 3px;
+  }
+
+  .date-clear:hover { color: var(--text); background: rgba(0, 0, 0, 0.06); }
+
+  .date-wrap input[type="date"].has-value + .date-clear { display: inline-flex; }
+  .date-wrap input:disabled + .date-clear { display: none; }
+
+  .config-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 18px;
+    margin-bottom: 16px;
+  }
+
+  .config-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .config-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+  }
+
+  .link-btn {
+    background: none;
+    border: none;
+    padding: 2px 4px;
+    margin: 0;
+    color: var(--accent);
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .link-btn:hover { color: var(--accent-hover); }
+
+  .config-body {
+    margin-top: 12px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .config-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .config-row label {
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+
+  .config-row input {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    padding: 7px 9px;
+  }
+
+  .config-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 2px;
+  }
+
+  .config-summary {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Application Tracker Relay</h1>
+      <p class="subtitle">Paste a row as JSON, apply it to the form, review, and send.</p>
+    </header>
+
+    <section class="config-card" id="configCard">
+      <div class="config-header">
+        <span class="config-title">Configuration</span>
+        <button type="button" id="configToggle" class="link-btn">edit</button>
+      </div>
+      <div class="config-body" id="configBody">
+        <div class="config-row">
+          <label for="cfgUrl">Webhook URL</label>
+          <input type="url" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        </div>
+        <div class="config-row">
+          <label for="cfgToken">Token</label>
+          <input type="text" id="cfgToken" placeholder="shared secret">
+        </div>
+        <div class="config-actions">
+          <button type="button" id="cfgSave" class="secondary">Save</button>
+          <button type="button" id="cfgClear" class="link-btn">clear</button>
+          <span id="cfgMsg" class="paste-msg"></span>
+        </div>
+      </div>
+      <div class="config-summary" id="configSummary"></div>
+    </section>
+
+    <section class="paste-card">
+      <label for="jsonInput" class="paste-label">Row JSON</label>
+      <textarea id="jsonInput" spellcheck="false" placeholder='{
+  "Company": "...",
+  "Role Title": "...",
+  "Date Applied": "YYYY-MM-DD",
+  "Posting URL": "...",
+  "Status": "Applied",
+  "Follow-Up Date": "",
+  "Resume Version": "...",
+  "Cover Letter": "...",
+  "Notes": "..."
+}'></textarea>
+      <div class="paste-actions">
+        <button type="button" id="applyBtn" class="secondary">Apply to Form</button>
+        <span id="pasteMsg" class="paste-msg"></span>
+      </div>
+    </section>
+
+    <form id="trackerForm" autocomplete="off" novalidate>
+      <div class="grid">
+        <div class="field">
+          <label for="company">Company<span class="req">*</span></label>
+          <input type="text" id="company" required>
+        </div>
+
+        <div class="field">
+          <label for="role">Role Title<span class="req">*</span></label>
+          <input type="text" id="role" required>
+        </div>
+
+        <div class="field">
+          <label for="dateApplied">Date Applied</label>
+          <div class="date-wrap">
+            <input type="date" id="dateApplied">
+            <button type="button" class="date-clear" data-clears="dateApplied" aria-label="Clear date applied">×</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <label for="followUp">Follow-Up Date</label>
+          <div class="date-wrap">
+            <input type="date" id="followUp">
+            <button type="button" class="date-clear" data-clears="followUp" aria-label="Clear follow-up date">×</button>
+          </div>
+        </div>
+
+        <div class="field full">
+          <label for="postingUrl">Posting URL</label>
+          <input type="url" id="postingUrl" placeholder="https://...">
+        </div>
+
+        <div class="field">
+          <label for="statusField">Status</label>
+          <select id="statusField">
+            <option>Preparing</option>
+            <option>Applied</option>
+            <option>Interviewing</option>
+            <option>Offer</option>
+            <option>Rejected</option>
+            <option>Withdrawn</option>
+            <option>No Response</option>
+          </select>
+        </div>
+
+        <div class="field">
+          <label for="resumeVersion">Resume Version</label>
+          <input type="text" id="resumeVersion">
+        </div>
+
+        <div class="field full">
+          <label for="coverLetter">Cover Letter</label>
+          <input type="text" id="coverLetter">
+        </div>
+
+        <div class="field full">
+          <label for="notes">Notes</label>
+          <textarea id="notes"></textarea>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button type="submit" id="sendBtn">
+          <span class="spinner" aria-hidden="true"></span>
+          <span class="label">Send to Tracker</span>
+        </button>
+        <button type="button" id="resetBtn" class="secondary" style="display:none;">Send another</button>
+      </div>
+
+      <div class="status" id="status" role="status" aria-live="polite"></div>
+    </form>
+  </div>
+
+<script>
+  // ============================================================
+  // Paste it into the "Row JSON" field above and click "Apply to Form".
+  // The form fields are the source of truth for what gets sent.
+  // ============================================================
+
+  // Config is loaded from browser localStorage. First-time users are prompted
+  // via the Configuration panel; values never touch the committed HTML.
+  let WEBHOOK_URL = localStorage.getItem("tracker.webhookUrl") || "";
+  let TOKEN = localStorage.getItem("tracker.token") || "";
+
+  // Maps ROW keys to form input element IDs.
+  const FIELD_MAP = {
+    "Company":        "company",
+    "Role Title":     "role",
+    "Date Applied":   "dateApplied",
+    "Posting URL":    "postingUrl",
+    "Status":         "statusField",
+    "Follow-Up Date": "followUp",
+    "Resume Version": "resumeVersion",
+    "Cover Letter":   "coverLetter",
+    "Notes":          "notes"
+  };
+
+  const form = document.getElementById("trackerForm");
+  const sendBtn = document.getElementById("sendBtn");
+  const resetBtn = document.getElementById("resetBtn");
+  const statusEl = document.getElementById("status");
+  const jsonInput = document.getElementById("jsonInput");
+  const applyBtn = document.getElementById("applyBtn");
+  const pasteMsg = document.getElementById("pasteMsg");
+
+  // ── Configuration panel (localStorage-backed) ──────────────
+  const cfgUrl = document.getElementById("cfgUrl");
+  const cfgToken = document.getElementById("cfgToken");
+  const cfgMsg = document.getElementById("cfgMsg");
+  const configBody = document.getElementById("configBody");
+  const configSummary = document.getElementById("configSummary");
+  const configToggle = document.getElementById("configToggle");
+
+  function setCfgMsg(kind, text) {
+    cfgMsg.className = "paste-msg " + (kind || "");
+    cfgMsg.textContent = text || "";
+  }
+
+  function updateConfigUI() {
+    const configured = !!(WEBHOOK_URL && TOKEN);
+    if (configured) {
+      configBody.style.display = "none";
+      configSummary.style.display = "block";
+      let host = "";
+      try { host = new URL(WEBHOOK_URL).host; } catch { host = "(invalid URL)"; }
+      const masked = TOKEN.length > 8
+        ? TOKEN.slice(0, 4) + "…" + TOKEN.slice(-4)
+        : "••••";
+      configSummary.textContent = `${host} · token ${masked}`;
+      configToggle.textContent = "edit";
+    } else {
+      configBody.style.display = "grid";
+      configSummary.style.display = "none";
+      configToggle.textContent = "hide";
+    }
+    sendBtn.disabled = !configured;
+    sendBtn.title = configured ? "" : "Save webhook URL and token first";
+  }
+
+  // Prefill config inputs from whatever we loaded.
+  cfgUrl.value = WEBHOOK_URL;
+  cfgToken.value = TOKEN;
+  updateConfigUI();
+
+  document.getElementById("cfgSave").addEventListener("click", () => {
+    const url = cfgUrl.value.trim();
+    const tok = cfgToken.value.trim();
+    if (!url || !tok) {
+      setCfgMsg("err", "Both fields required.");
+      return;
+    }
+    try { new URL(url); } catch {
+      setCfgMsg("err", "Webhook URL is not a valid URL.");
+      return;
+    }
+    localStorage.setItem("tracker.webhookUrl", url);
+    localStorage.setItem("tracker.token", tok);
+    WEBHOOK_URL = url;
+    TOKEN = tok;
+    setCfgMsg("ok", "Saved to this browser.");
+    updateConfigUI();
+  });
+
+  document.getElementById("cfgClear").addEventListener("click", () => {
+    if (!confirm("Clear webhook URL and token from this browser?")) return;
+    localStorage.removeItem("tracker.webhookUrl");
+    localStorage.removeItem("tracker.token");
+    WEBHOOK_URL = "";
+    TOKEN = "";
+    cfgUrl.value = "";
+    cfgToken.value = "";
+    setCfgMsg("", "");
+    updateConfigUI();
+  });
+
+  configToggle.addEventListener("click", () => {
+    const configured = !!(WEBHOOK_URL && TOKEN);
+    if (!configured) return; // panel is already open
+    const showing = configBody.style.display !== "none";
+    configBody.style.display = showing ? "none" : "grid";
+    configSummary.style.display = showing ? "block" : "none";
+    configToggle.textContent = showing ? "edit" : "hide";
+  });
+  // ───────────────────────────────────────────────────────────
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    }[c]));
+  }
+
+  function setPasteMsg(kind, text) {
+    pasteMsg.className = "paste-msg " + (kind || "");
+    pasteMsg.textContent = text || "";
+  }
+
+  function applyJsonToForm() {
+    const raw = jsonInput.value.trim();
+    if (!raw) {
+      setPasteMsg("err", "JSON is empty.");
+      return;
+    }
+
+    // Accept either a bare row object { "Company": ... } or a full payload
+    // { "token": ..., "row": { ... } } to account for two possible workflows.
+    let parsed;
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      setPasteMsg("err", "Invalid JSON: " + err.message);
+      return;
+    }
+    const row = (parsed && typeof parsed === "object" && parsed.row && typeof parsed.row === "object")
+      ? parsed.row
+      : parsed;
+
+    if (!row || typeof row !== "object" || Array.isArray(row)) {
+      setPasteMsg("err", "Expected a JSON object with row fields.");
+      return;
+    }
+
+    // Apply known fields; track unknown keys so stray data gets flagged, not silently dropped.
+    const unknown = [];
+    let applied = 0;
+    for (const key of Object.keys(row)) {
+      const elId = FIELD_MAP[key];
+      if (!elId) {
+        unknown.push(key);
+        continue;
+      }
+      const el = document.getElementById(elId);
+      if (el) {
+        el.value = row[key] != null ? String(row[key]) : "";
+        applied++;
+      }
+    }
+
+    if (applied === 0) {
+      setPasteMsg("err", "No matching fields found in the JSON.");
+      return;
+    }
+
+    // Default Follow-Up Date to Date Applied + 14 days if it's empty after applying the JSON.
+    // Triggers whether the JSON omitted the key or supplied an empty string — a populated
+    // value in the form is respected, so you can override by setting the field manually after apply.
+    const followUpEl = document.getElementById("followUp");
+    const dateAppliedEl = document.getElementById("dateApplied");
+    if (!followUpEl.value && dateAppliedEl.value) {
+      const d = new Date(dateAppliedEl.value + "T00:00:00");
+      if (!isNaN(d)) {
+        d.setDate(d.getDate() + 14);
+        followUpEl.value = d.toISOString().slice(0, 10);
+      }
+    }
+
+    const parts = [`Applied ${applied} field${applied === 1 ? "" : "s"} to the form.`];
+    if (unknown.length) parts.push(`Ignored unknown keys: ${unknown.join(", ")}.`);
+    setPasteMsg("ok", parts.join(" "));
+
+    // Programmatic .value assignment doesn't fire input/change events, so update the
+    // has-value class directly for date inputs.
+    document.querySelectorAll('.date-wrap input[type="date"]').forEach(input => {
+      input.classList.toggle("has-value", !!input.value);
+    });
+  }
+
+  function readRow() {
+    const out = {};
+    for (const [key, elId] of Object.entries(FIELD_MAP)) {
+      const el = document.getElementById(elId);
+      out[key] = el ? el.value.trim() : "";
+    }
+    return out;
+  }
+
+  function setFieldsDisabled(disabled) {
+    for (const elId of Object.values(FIELD_MAP)) {
+      const el = document.getElementById(elId);
+      if (el) el.disabled = disabled;
+    }
+  }
+
+  function showStatus(kind, html) {
+    statusEl.className = "status show " + kind;
+    statusEl.innerHTML = html;
+  }
+
+  async function send() {
+    statusEl.className = "status";
+    statusEl.innerHTML = "";
+
+    if (!WEBHOOK_URL || !TOKEN) {
+      showStatus("error", "<strong>Not configured.</strong> Set the webhook URL and token above first.");
+      return;
+    }
+
+    const row = readRow();
+
+    // Client-side validation mirrors the Apps Script's strict checks.
+    if (!row["Company"] || !row["Role Title"]) {
+      showStatus("error", "<strong>Company and Role Title are required.</strong>");
+      return;
+    }
+
+    sendBtn.classList.add("loading");
+    sendBtn.disabled = true;
+
+    const payload = { token: TOKEN, row: row };
+
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: "POST",
+        mode: "cors",
+        redirect: "follow",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(payload)
+      });
+
+      const rawText = await res.text();
+      let parsed = null;
+      try { parsed = JSON.parse(rawText); } catch { /* leave as text */ }
+
+      // Apps Script always returns HTTP 200; success is only knowable via parsed.success.
+      if (parsed && parsed.success === true) {
+        const company = escapeHtml(row["Company"]);
+        const roleTitle = escapeHtml(row["Role Title"]);
+        const rowNum = parsed.rowAppended;
+        const sheetUrl = parsed.sheetUrl;
+
+        let msg = `<strong>${company}</strong> — ${roleTitle}`;
+        if (rowNum != null) {
+          if (sheetUrl) {
+            msg += ` <a href="${escapeHtml(sheetUrl)}" target="_blank" rel="noopener noreferrer" class="row-number">row ${rowNum} ↗</a>`;
+          } else {
+            msg += ` <span class="row-number">row ${rowNum}</span>`;
+          }
+        }
+        showStatus("success", msg);
+
+        // Lock fields so accidental edits + resend don't produce mismatched rows.
+        setFieldsDisabled(true);
+        sendBtn.style.display = "none";
+        resetBtn.style.display = "inline-flex";
+      } else {
+        const errMsg = parsed && parsed.error ? parsed.error : (rawText || "(empty response)");
+        showStatus("error",
+          `<strong>Request failed.</strong><pre>${escapeHtml(errMsg)}</pre>`);
+        sendBtn.classList.remove("loading");
+        sendBtn.disabled = false;
+      }
+    } catch (err) {
+      showStatus("error",
+        `<strong>Network error.</strong><pre>${escapeHtml(err && err.message ? err.message : String(err))}</pre>` +
+        `<div style="margin-top:8px; font-size:12px; opacity:0.85;">If this artifact is running inside of an iFrame, download it and open the HTML file directly in a browser.</div>`);
+      sendBtn.classList.remove("loading");
+      sendBtn.disabled = false;
+    }
+  }
+
+  form.addEventListener("submit", (e) => {
+    e.preventDefault();
+    send();
+  });
+
+  applyBtn.addEventListener("click", applyJsonToForm);
+
+  // Date clear buttons: clear the adjacent date input and hide the button.
+  document.querySelectorAll(".date-clear").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const input = document.getElementById(btn.dataset.clears);
+      if (input) {
+        input.value = "";
+        input.classList.remove("has-value");
+        input.focus();
+      }
+    });
+  });
+
+  // Keep the has-value marker in sync so the clear button shows/hides correctly.
+  // (Date inputs don't play well with :placeholder-shown, hence the explicit class.)
+  document.querySelectorAll('.date-wrap input[type="date"]').forEach(input => {
+    const sync = () => input.classList.toggle("has-value", !!input.value);
+    input.addEventListener("input", sync);
+    input.addEventListener("change", sync);
+  });
+
+  // Ctrl/Cmd + Enter inside the JSON box applies the JSON.
+  jsonInput.addEventListener("keydown", (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === "Enter") {
+      e.preventDefault();
+      applyJsonToForm();
+    }
+  });
+
+  resetBtn.addEventListener("click", () => {
+    setFieldsDisabled(false);
+    sendBtn.classList.remove("loading");
+    sendBtn.disabled = false;
+    sendBtn.style.display = "inline-flex";
+    resetBtn.style.display = "none";
+    statusEl.className = "status";
+    statusEl.innerHTML = "";
+  });
+</script>
+</body>
+</html>
