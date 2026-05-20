@@ -130,7 +130,7 @@ Reference copy. The live version lives in the Apps Script editor bound to `Appli
 const SECRET_TOKEN = "APPTRACKERSECRET-...";  // must match client localStorage token
 
 const COLUMNS = [
-  "Company", "Role Title", "Date Applied", "Posting URL", "Status",
+  "Company", "Role Title", "Date Applied", "Posting URL", "Source, "Status",
   "Follow-Up Date", "Resume Version", "Cover Letter", "Notes"
 ];
 
