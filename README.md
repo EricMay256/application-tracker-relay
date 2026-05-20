@@ -52,6 +52,7 @@ Claude produces a JSON object matching this shape per application. The relay acc
   "Role Title": "...",
   "Date Applied": "YYYY-MM-DD",
   "Posting URL": "...",
+  "Source": "...",
   "Status": "Preparing | Applied | Interviewing | Offer | Rejected | Withdrawn | No Response",
   "Follow-Up Date": "YYYY-MM-DD or omitted",
   "Resume Version": "...",
